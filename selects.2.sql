@@ -81,3 +81,85 @@ SELECT
 	END AS Situacao
 FROM Alunos a
 INNER JOIN Notas n ON a.id = n.AlunoId;
+
+--- Consultas combinadas (Exists, Union)
+--Mostrar apenas os alunos que tem pagamentos registrados
+SELECT Nome
+FROM Alunos a
+WHERE EXISTS (
+	SELECT 1 FROM Pagamentos p WHERE p.AlunoId = a.id
+);
+
+--Combinar os alunos e professores em uma mesma lista
+SELECT Nome, 'Aluno' as TIPO
+FROM Alunos
+UNION
+SELECT Nome, 'Professor' AS Tipo
+FROM Professores
+
+--Extra - Receita final
+-- Alunos com suas ultimas notas
+
+SELECT a.Nome, c.NomeCurso, n.Nota, n.DataAvaliacao
+FROM Alunos a
+INNER JOIN Notas n ON a.id = n. AlunoId
+INNER JOIN Cursos c ON c.id = n.CursoId
+WHERE n.DataAvaliacao = (
+	SELECT MAX(DataAvaliacao)
+	FROM Notas n2
+	WHERE n2.AlunoId = a.id
+);
+
+--ranking de alunos pelas notas
+--(usaremos uma função de janela)
+SELECT 
+	a.Nome,
+	c.NomeCurso,
+	n.Nota,
+	RANK() OVER (ORDER BY n.Nota DESC) AS Ranking
+FROM Notas n
+JOIN Alunos a ON n.AlunoId = a.id
+JOIN Cursos c ON n.CursoId = c.id
+ORDER BY a.Nome
+
+--multiplos calculos
+SELECT 
+	a.Nome AS Aluno,
+	AVG(CAST(n.Nota AS DECIMAL(10,2))) AS 'Media de Notas',
+	MIN(n.Nota) AS 'Menor Nota',
+	MAX(n.Nota) AS 'Maior Nota',
+	COUNT (*) AS 'Qtd Notas'
+FROM Alunos	a
+INNER JOIN Notas n ON n.AlunoId = a.id
+GROUP BY a.Nome
+
+--Contar quantas avaliações há por situação
+SELECT
+	a.Nome AS Aluno,
+	COUNT (n.Nota) AS 'Qtd Notas'
+FROM Alunos a
+INNER JOIN Notas n ON n.AlunoId = a.id
+GROUP BY a.Nome
+
+--com a metodologia do professor
+SELECT
+	CASE
+		WHEN n.Nota >=7 THEN 'Aprovado'
+		WHEN n.Nota >=5 THEN 'Recuperação'
+		ELSE 'Reprovado'
+	END AS Situacao,
+	COUNT (*) AS Quantidade
+FROM Alunos a
+INNER JOIN Notas n ON a.id = n.AlunoId
+GROUP BY
+	CASE
+		WHEN n.Nota >=7 THEN 'Aprovado'
+		WHEN n.Nota >=5 THEN 'Recuperação'
+		ELSE 'Reprovado'
+	END
+ORDER BY Quantidade DESC;
+
+--quero trazer alunos com email do gmail
+SELECT Nome, Email
+FROM Alunos
+WHERE Email LIKE '%gmail.com';
